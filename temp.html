@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Weather API</title>
+</head>
+<body>
+<script>
+// Get user's IP and location, then fetch weather
+async function getWeather() {
+    try {
+        // Get IP location
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+        
+        const lat = ipData.latitude;
+        const lon = ipData.longitude;
+        
+        // Get NWS office and grid coordinates
+        const pointResponse = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
+        const pointData = await pointResponse.json();
+        
+        // Get current conditions
+        const stationsResponse = await fetch(pointData.properties.observationStations);
+        const stationsData = await stationsResponse.json();
+        const stationUrl = stationsData.features[0].id;
+        
+        const currentResponse = await fetch(`${stationUrl}/observations/latest`);
+        const currentData = await currentResponse.json();
+        
+        // Get forecast for high/low
+        const forecastResponse = await fetch(pointData.properties.forecast);
+        const forecastData = await forecastResponse.json();
+        
+        // Extract data
+        const temp = currentData.properties.temperature.value;
+        const tempF = temp ? Math.round(temp * 9/5 + 32) : 'N/A';
+        
+        const todayForecast = forecastData.properties.periods[0];
+        const tonightForecast = forecastData.properties.periods[1];
+        
+        let high = 'N/A';
+        let low = 'N/A';
+        
+        if (todayForecast.name.includes('Today') || todayForecast.name.includes('This Afternoon')) {
+            high = todayForecast.temperature;
+            low = tonightForecast.temperature;
+        } else {
+            // If it's evening/night, use tomorrow's data
+            high = forecastData.properties.periods[1].temperature;
+            low = forecastData.properties.periods[0].temperature;
+        }
+        
+        const outlook = todayForecast.shortForecast.toLowerCase();
+        
+        // Format output
+        const output = `temperature: ${tempF}F
+high: ${high}F
+low: ${low}F
+outlook: ${outlook}`;
+        
+        document.body.innerHTML = `<pre>${output}</pre>`;
+        
+    } catch (error) {
+        document.body.innerHTML = `<pre>error: unable to fetch weather data</pre>`;
+    }
+}
+
+// Auto-run when page loads
+window.onload = getWeather;
+</script>
+</body>
+</html>

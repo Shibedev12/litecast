@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Extended Forecast API</title>
+</head>
+<body>
+<script>
+async function getExtended() {
+    try {
+        // Get IP location
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+        
+        const lat = ipData.latitude;
+        const lon = ipData.longitude;
+        
+        // Get NWS office and grid coordinates
+        const pointResponse = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
+        const pointData = await pointResponse.json();
+        
+        // Get 5-day forecast
+        const forecastResponse = await fetch(pointData.properties.forecast);
+        const forecastData = await forecastResponse.json();
+        
+        let output = '';
+        
+        // Process up to 10 periods (5 days - day/night pairs)
+        for (let i = 0; i < Math.min(10, forecastData.properties.periods.length); i++) {
+            const period = forecastData.properties.periods[i];
+            const day = Math.floor(i / 2) + 1;
+            const timeOfDay = period.isDaytime ? 'day' : 'night';
+            
+            output += `day${day}_${timeOfDay}: ${period.temperature}F - ${period.shortForecast.toLowerCase()}\n`;
+        }
+        
+        document.body.innerHTML = `<pre>${output.trim()}</pre>`;
+        
+    } catch (error) {
+        document.body.innerHTML = `<pre>error: unable to fetch extended forecast</pre>`;
+    }
+}
+
+window.onload = getExtended;
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Radar API</title>
+</head>
+<body>
+<script>
+async function getRadar() {
+    try {
+        // Get IP location
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+        
+        const lat = ipData.latitude;
+        const lon = ipData.longitude;
+        
+        // Get NWS office info
+        const pointResponse = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
+        const pointData = await pointResponse.json();
+        
+        // Extract radar station from office
+        const radarStation = pointData.properties.radarStation;
+        
+        // NWS radar image URL (animated GIF)
+        const radarUrl = `https://radar.weather.gov/ridge/standard/${radarStation}_loop.gif`;
+        
+        // Display the radar image directly
+        document.body.innerHTML = `<img src="${radarUrl}" alt="Current Radar" style="max-width:100%;">`;
+        
+    } catch (error) {
+        document.body.innerHTML = `<pre>error: unable to fetch radar data</pre>`;
+    }
+}
+
+window.onload = getRadar;
+</script>
+</body>
+</html>

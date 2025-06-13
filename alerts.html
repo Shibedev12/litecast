@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Alerts API</title>
+</head>
+<body>
+<script>
+async function getAlerts() {
+    try {
+        // Get IP location
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+        
+        const lat = ipData.latitude;
+        const lon = ipData.longitude;
+        
+        // Get NWS office info
+        const pointResponse = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
+        const pointData = await pointResponse.json();
+        
+        // Get county/zone for alerts
+        const county = pointData.properties.county;
+        const zone = pointData.properties.forecastZone;
+        
+        // Get active alerts for the area
+        const alertsResponse = await fetch(`https://api.weather.gov/alerts/active?zone=${zone.split('/').pop()}`);
+        const alertsData = await alertsResponse.json();
+        
+        let output = '';
+        
+        if (alertsData.features && alertsData.features.length > 0) {
+            alertsData.features.forEach((alert, index) => {
+                const alertNum = index + 1;
+                const event = alert.properties.event.toLowerCase();
+                const severity = alert.properties.severity.toLowerCase();
+                const headline = alert.properties.headline || 'no headline';
+                
+                output += `alert${alertNum}: ${event}\n`;
+                output += `severity${alertNum}: ${severity}\n`;
+                output += `headline${alertNum}: ${headline}\n`;
+                
+                if (index < alertsData.features.length - 1) {
+                    output += '\n';
+                }
+            });
+        } else {
+            output = 'alerts: none';
+        }
+        
+        document.body.innerHTML = `<pre>${output.trim()}</pre>`;
+        
+    } catch (error) {
+        document.body.innerHTML = `<pre>error: unable to fetch alerts data</pre>`;
+    }
+}
+
+window.onload = getAlerts;
+</script>
+</body>
+</html>
